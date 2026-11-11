@@ -6,8 +6,8 @@ import {
   sendPasswordResetEmail, sendEmailVerification, GoogleAuthProvider, signInWithPopup, signOut,
 } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
 import {
-  getFirestore, collection, getDocs, getDoc, doc, addDoc, setDoc, query, where, serverTimestamp, writeBatch, onSnapshot,
-} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
+  getFirestore, collection, getDocs, getDoc, doc, addDoc, setDoc, query, where, serverTimestamp, writeBatch,
+} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-lite.js'; // Reto 6: versión ligera (30 KB frente a 112 KB)
 import { firebaseConfig } from './firebase-config.js';
 
 const configurado = !firebaseConfig.apiKey.startsWith('PEGA');
@@ -97,7 +97,14 @@ async function cobroPagadoSinUsar() {
   return libre ? { id: libre.id, ...libre.data() } : null;
 }
 // Avisa cada cambio del cobro (pendiente → pagado o cancelado); devuelve la función para dejar de escuchar
-const escucharCobro = (id, fn) => onSnapshot(doc(db, 'cobros', id), d => fn(d.data()));
+// Reto 6: la escucha en vivo necesita el Firestore completo; solo se descarga al pagar con la billetera
+const escucharCobro = (id, fn) => {
+  let dejar = () => {}, cancelado = false;
+  import('https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js').then(f => {
+    if (!cancelado) dejar = f.onSnapshot(f.doc(f.getFirestore(app), 'cobros', id), d => fn(d.data()));
+  });
+  return () => { cancelado = true; dejar(); };
+};
 
 // ---------- Carga del catálogo (sembrar.html) ----------
 async function sembrar() {
