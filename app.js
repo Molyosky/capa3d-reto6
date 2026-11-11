@@ -106,7 +106,7 @@
           <div class="cant"><div class="qty" role="group"><button type="button" class="btn" aria-label="Quitar una unidad">−</button><output aria-live="polite"></output><button type="button" class="btn" aria-label="Agregar una unidad">+</button></div>
           <p class="muted cant-ayuda" aria-live="polite">Entre 1 y ${MAX} unidades.</p></div>
           <button type="button" class="btn btn-dashed">Eliminar</button>`;
-        fila.querySelector('img').src = i.img;
+        fila.querySelector('img').src = i.img.replace(/\.png$/, '.webp'); // carritos guardados antes del Reto 6
         fila.querySelector('h3').textContent = i.nombre;
         fila.querySelector('.muted').textContent = i.opciones + ' · ' + dinero(i.precio) + ' c/u';
         fila.querySelector('.price').textContent = dinero(i.precio * i.cant);
