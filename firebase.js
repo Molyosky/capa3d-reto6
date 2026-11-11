@@ -68,7 +68,7 @@ async function misPedidos() {
   return snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => b.fecha - a.fecha); // sin índice compuesto
 }
 
-// ---------- Cobro simulado con billetera QR (la billetera vive en otro sitio: molyosky.github.io/billetera-qr) ----------
+// ---------- Cobro simulado con billetera QR (la billetera vive en otro sitio: molyosky.github.io/billetera-qr-reto6) ----------
 async function crearCobro(monto) {
   if (!db) sinConfig();
   const u = await sesionLista;
