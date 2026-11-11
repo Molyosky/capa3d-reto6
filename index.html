@@ -61,12 +61,13 @@
   const q = $('#q'), cat = $('#cat'), orden = $('#orden'), grid = $('#grid'), conteo = $('#conteo');
   const dinero = n => '$ ' + n.toFixed(2).replace('.', ',');
   const productos = await window.C3D.cargarProductos();
-  const tarjetas = productos.map(p => {
+  const tarjetas = productos.map((p, n) => {
     const a = document.createElement('a');
     a.className = 'product-card'; a.href = 'producto.html?id=' + encodeURIComponent(p.id);
     a.setAttribute('aria-label', p.nombre + ', ver detalle');
     a.innerHTML = '<div class="photo"><img loading="lazy"></div><h3></h3><div class="tags"><span class="tag"></span><span class="muted"></span></div><p class="price"></p><span class="btn btn-block">Ver detalle</span>';
     a.querySelector('img').src = window.C3D_FOTO(p); a.querySelector('img').alt = p.nombre;
+    if (n < 4) a.querySelector('img').loading = 'eager'; // la primera fila se ve sin hacer scroll
     a.querySelector('h3').textContent = p.nombre;
     a.querySelector('.tag').textContent = p.cat;
     a.querySelector('.tags .muted').textContent = 'Listo en ' + p.dias + (p.dias === 1 ? ' día' : ' días');

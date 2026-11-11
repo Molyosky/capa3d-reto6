@@ -2,7 +2,7 @@
 // app.js sigue leyendo la sesión desde localStorage ('c3d-cuenta'); aquí se mantiene sincronizada.
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
 import {
-  getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword,
+  initializeAuth, indexedDBLocalPersistence, browserLocalPersistence, browserPopupRedirectResolver, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword,
   sendPasswordResetEmail, sendEmailVerification, GoogleAuthProvider, signInWithPopup, signOut,
 } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
 import {
@@ -12,7 +12,8 @@ import { firebaseConfig } from './firebase-config.js';
 
 const configurado = !firebaseConfig.apiKey.startsWith('PEGA');
 const app = configurado ? initializeApp(firebaseConfig) : null;
-const auth = app && getAuth(app), db = app && getFirestore(app);
+// Reto 6: sin popupRedirectResolver aquí, el iframe de Google (~390 KB) solo se descarga al pulsar "Continuar con Google"
+const auth = app && initializeAuth(app, { persistence: [indexedDBLocalPersistence, browserLocalPersistence] }), db = app && getFirestore(app);
 const $ = s => document.querySelector(s);
 const pagina = location.pathname.split('/').pop() || 'index.html';
 const sinConfig = () => { throw new Error('Firebase no está configurado: completa firebase-config.js.'); };
@@ -37,16 +38,23 @@ if (auth) onAuthStateChanged(auth, async u => {
 else resolverSesion(null);
 
 // ---------- Catálogo ----------
+// Reto 6: la base guarda rutas .png (2 MB); la copia sirve la versión .webp de 800 px
+const ligero = p => ({ ...p, fotos: p.fotos?.map(f => f.replace(/\.png$/, '.webp')) });
 async function cargarProductos() {
   if (!db) return window.C3D_PRODUCTOS;
+  // shortcut: el catálogo se guarda por pestaña (sessionStorage); un cambio de precio se ve al abrir otra pestaña
+  try { const c = JSON.parse(sessionStorage.getItem('c3d-productos')); if (c?.length) return c; } catch {}
   try {
     // Si Firestore tarda más de 5 s (red lenta), se muestra la lista local en vez de quedarse "Cargando"
     const snap = await Promise.race([getDocs(collection(db, 'productos')), new Promise((_, no) => setTimeout(no, 5000))]);
-    return snap.empty ? window.C3D_PRODUCTOS : snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    if (snap.empty) return window.C3D_PRODUCTOS;
+    const lista = snap.docs.map(d => ligero({ id: d.id, ...d.data() }));
+    try { sessionStorage.setItem('c3d-productos', JSON.stringify(lista)); } catch {}
+    return lista;
   } catch { return window.C3D_PRODUCTOS; } // sin conexión: lista local
 }
 async function cargarProducto(id) {
-  if (db) try { const d = await getDoc(doc(db, 'productos', id)); if (d.exists()) return { id: d.id, ...d.data() }; } catch {}
+  if (db) try { const d = await getDoc(doc(db, 'productos', id)); if (d.exists()) return ligero({ id: d.id, ...d.data() }); } catch {}
   return window.C3D_PRODUCTOS.find(p => p.id === id) || null;
 }
 
@@ -147,7 +155,7 @@ if (pagina === 'login.html') {
       if (creando) await sendEmailVerification(r.user);
     });
   });
-  $('#btn-google').onclick = () => intentar(() => signInWithPopup(auth, new GoogleAuthProvider()));
+  $('#btn-google').onclick = () => intentar(() => signInWithPopup(auth, new GoogleAuthProvider(), browserPopupRedirectResolver));
   $('#olvide').onclick = async () => {
     const correo = $('#correo').value.trim();
     if (!correo) return mostrar('Escribe tu correo y vuelve a pulsar "Olvidé mi contraseña".');
