@@ -166,7 +166,7 @@
       const C3D = window.C3D || await new Promise(r => addEventListener('c3d-listo', () => r(window.C3D), { once: true }));
       try { cobro = await C3D.crearCobro(+totales().total.toFixed(2)); }
       catch (e) { cobro = null; estado.textContent = 'No se pudo generar el cobro: ' + e.message; return; }
-      const url = 'https://molyosky.github.io/billetera-qr/?c=' + cobro;
+      const url = 'https://molyosky.github.io/billetera-qr-reto6/?c=' + cobro;
       // En celular no se puede escanear la propia pantalla: se abre la billetera con un botón
       $('#abrir-billetera').href = url;
       if (matchMedia('(pointer: coarse)').matches) {
